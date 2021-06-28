@@ -52,8 +52,13 @@
  *
  * This macro is for (out op in).
  */
+/* Restrict *count, here and in other 2buff-ism, so GCC vectorizes the
+   loop (versioned to account for aliasing); otherwise opt-info says
+   the loop count is unknown.  Fixme: The avx version doesn't seem to
+   bother about aliasing, so perhaps we could also restrict the
+   buffers.  */
 #define OP_FUNC(name, type_name, type, op) \
-  static void ompi_op_base_2buff_##name##_##type_name(const void *in, void *out, int *count, \
+  static void ompi_op_base_2buff_##name##_##type_name(const void *in, void *out, int *restrict count, \
                                                       struct ompi_datatype_t **dtype, \
                                                       struct ompi_op_base_module_1_0_0_t *module) \
   {                                                                      \
@@ -73,7 +78,7 @@
  * This macro is for (out = op(out, in))
  */
 #define FUNC_FUNC(name, type_name, type) \
-  static void ompi_op_base_2buff_##name##_##type_name(const void *in, void *out, int *count, \
+  static void ompi_op_base_2buff_##name##_##type_name(const void *in, void *out, int *restrict count, \
                                                 struct ompi_datatype_t **dtype, \
                                                 struct ompi_op_base_module_1_0_0_t *module) \
   {                                                                      \
@@ -101,7 +106,7 @@
   } ompi_op_predefined_##type_name##_t;
 
 #define LOC_FUNC(name, type_name, op) \
-    static void ompi_op_base_2buff_##name##_##type_name(const void *in, void *out, int *count, \
+    static void ompi_op_base_2buff_##name##_##type_name(const void *in, void *out, int *restrict count, \
                                                         struct ompi_datatype_t **dtype, \
                                                         struct ompi_op_base_module_1_0_0_t *module) \
     {                                                                   \
@@ -125,7 +130,7 @@
  * not supports the corresponding complex number type.
  */
 #define COMPLEX_SUM_FUNC(type_name, type) \
-  static void ompi_op_base_2buff_sum_##type_name(const void *in, void *out, int *count, \
+  static void ompi_op_base_2buff_sum_##type_name(const void *in, void *out, int *restrict count, \
                                                  struct ompi_datatype_t **dtype, \
                                                  struct ompi_op_base_module_1_0_0_t *module) \
   {                                                                      \
@@ -145,7 +150,7 @@
  * not supports the corresponding complex number type.
  */
 #define COMPLEX_PROD_FUNC(type_name, type) \
-  static void ompi_op_base_2buff_prod_##type_name(const void *in, void *out, int *count, \
+  static void ompi_op_base_2buff_prod_##type_name(const void *in, void *out, int *restrict count, \
                                                   struct ompi_datatype_t **dtype, \
                                                   struct ompi_op_base_module_1_0_0_t *module) \
   {                                                                      \
