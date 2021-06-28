@@ -42,6 +42,32 @@
 #  pragma GCC optimize ("O3", "-funsafe-math-optimizations")
 #endif
 
+/* Unfortunately, target clones only works with post-EL7 (v2.23+) libc.  */
+#if __GNUC__ >= 6 && (__GLIBC__ > 2 || (__GLIBC__ == 2 && __GLIBC_MINOR__ >= 23))
+#  if __powerpc64__
+/* The base is power8 and there's no power10 as of GCC 11.  I don't
+   know if anything extra in the POWER9 ISA actually helps.  We could
+   get this on EL7 with the IBM "Advance Toolkit" libc, which gets
+   runtime-linked by the ld-linux its compiler inserts.  */
+#    define TARGETS __attribute__ ((target_clones ("cpu=power9,default")))
+#  endif
+
+#  if __aarch64__
+/* Neon is always present (with advanced SIMD, I think).  */
+#    if __GNUC__ >= 9
+/* Fixme: I don't know if thunderx2t99 is useful or whether a64fx
+   works for other targets which have SVE.  */
+#      define TARGETS __attribute__ ((target_clones ("arch=a64fx,arch=thunderx2t99,default")))
+#    else
+/* thunderx2t99 could be added with GCC 8.  */
+#    endif
+#  endif
+#endif
+
+#ifndef TARGETS
+#define TARGETS
+#endif
+
 #include "ompi/mca/op/op.h"
 
 
@@ -58,6 +84,7 @@
    bother about aliasing, so perhaps we could also restrict the
    buffers.  */
 #define OP_FUNC(name, type_name, type, op) \
+  TARGETS \
   static void ompi_op_base_2buff_##name##_##type_name(const void *in, void *out, int *restrict count, \
                                                       struct ompi_datatype_t **dtype, \
                                                       struct ompi_op_base_module_1_0_0_t *module) \
@@ -78,6 +105,7 @@
  * This macro is for (out = op(out, in))
  */
 #define FUNC_FUNC(name, type_name, type) \
+  TARGETS                                                               \
   static void ompi_op_base_2buff_##name##_##type_name(const void *in, void *out, int *restrict count, \
                                                 struct ompi_datatype_t **dtype, \
                                                 struct ompi_op_base_module_1_0_0_t *module) \
@@ -106,6 +134,7 @@
   } ompi_op_predefined_##type_name##_t;
 
 #define LOC_FUNC(name, type_name, op) \
+    TARGETS                                                             \
     static void ompi_op_base_2buff_##name##_##type_name(const void *in, void *out, int *restrict count, \
                                                         struct ompi_datatype_t **dtype, \
                                                         struct ompi_op_base_module_1_0_0_t *module) \
@@ -130,6 +159,7 @@
  * not supports the corresponding complex number type.
  */
 #define COMPLEX_SUM_FUNC(type_name, type) \
+  TARGETS                                                               \
   static void ompi_op_base_2buff_sum_##type_name(const void *in, void *out, int *restrict count, \
                                                  struct ompi_datatype_t **dtype, \
                                                  struct ompi_op_base_module_1_0_0_t *module) \
@@ -150,6 +180,7 @@
  * not supports the corresponding complex number type.
  */
 #define COMPLEX_PROD_FUNC(type_name, type) \
+  TARGETS                                                               \
   static void ompi_op_base_2buff_prod_##type_name(const void *in, void *out, int *restrict count, \
                                                   struct ompi_datatype_t **dtype, \
                                                   struct ompi_op_base_module_1_0_0_t *module) \
@@ -668,6 +699,7 @@ LOC_FUNC(minloc, long_double_int, <)
  *    routines, needed for some optimizations.
  */
 #define OP_FUNC_3BUF(name, type_name, type, op) \
+    TARGETS                                                             \
     static void ompi_op_base_3buff_##name##_##type_name(const void * restrict in1,   \
                                                         const void * restrict in2, void * restrict out, int *count, \
                                                         struct ompi_datatype_t **dtype, \
@@ -690,6 +722,7 @@ LOC_FUNC(minloc, long_double_int, <)
  * This macro is for (out = op(in1, in2))
  */
 #define FUNC_FUNC_3BUF(name, type_name, type)                           \
+    TARGETS                                                             \
     static void ompi_op_base_3buff_##name##_##type_name(const void * restrict in1, \
                                                         const void * restrict in2, void * restrict out, int *count, \
                                                         struct ompi_datatype_t **dtype, \
@@ -723,6 +756,7 @@ LOC_FUNC(minloc, long_double_int, <)
 */
 
 #define LOC_FUNC_3BUF(name, type_name, op) \
+  TARGETS                                                               \
   static void ompi_op_base_3buff_##name##_##type_name(const void * restrict in1,      \
                                                       const void * restrict in2, void * restrict out, int *count, \
                                                       struct ompi_datatype_t **dtype, \
@@ -753,6 +787,7 @@ LOC_FUNC(minloc, long_double_int, <)
  * not supports the corresponding complex number type.
  */
 #define COMPLEX_SUM_FUNC_3BUF(type_name, type) \
+  TARGETS                                                               \
   static void ompi_op_base_3buff_sum_##type_name(const void * restrict in1,    \
                                                  const void * restrict in2, void * restrict out, int *count, \
                                                  struct ompi_datatype_t **dtype, \
@@ -775,6 +810,7 @@ LOC_FUNC(minloc, long_double_int, <)
  * not supports the corresponding complex number type.
  */
 #define COMPLEX_PROD_FUNC_3BUF(type_name, type) \
+  TARGETS                                                               \
   static void ompi_op_base_3buff_prod_##type_name(const void * restrict in1,   \
                                                   const void * restrict in2, void * restrict out, int *count, \
                                                   struct ompi_datatype_t **dtype, \
