@@ -424,7 +424,7 @@ OP_FUNC(prod, c_long_double_complex, long double _Complex, *=)
  *************************************************************************/
 
 #undef current_func
-#define current_func(a, b) ((a) && (b))
+#define current_func(a, b) (((a) != 0) & ((b) != 0))
 /* C integer */
 FUNC_FUNC(land,   int8_t,   int8_t)
 FUNC_FUNC(land,  uint8_t,  uint8_t)
@@ -446,7 +446,7 @@ FUNC_FUNC(land, bool, bool)
  *************************************************************************/
 
 #undef current_func
-#define current_func(a, b) ((a) || (b))
+#define current_func(a, b) (((a) != 0) | ((b) != 0))
 /* C integer */
 FUNC_FUNC(lor,   int8_t,   int8_t)
 FUNC_FUNC(lor,  uint8_t,  uint8_t)
@@ -1048,7 +1048,7 @@ OP_FUNC_3BUF(prod, c_long_double_complex, long double _Complex, *)
  *************************************************************************/
 
 #undef current_func
-#define current_func(a, b) ((a) && (b))
+#define current_func(a, b) (((a) != 0) & ((b) !=0))
 /* C integer */
 FUNC_FUNC_3BUF(land,   int8_t,   int8_t)
 FUNC_FUNC_3BUF(land,  uint8_t,  uint8_t)
@@ -1070,7 +1070,7 @@ FUNC_FUNC_3BUF(land, bool, bool)
  *************************************************************************/
 
 #undef current_func
-#define current_func(a, b) ((a) || (b))
+#define current_func(a, b) (((a) != 0) | ((b) != 0))
 /* C integer */
 FUNC_FUNC_3BUF(lor,   int8_t,   int8_t)
 FUNC_FUNC_3BUF(lor,  uint8_t,  uint8_t)
