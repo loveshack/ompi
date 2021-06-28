@@ -26,6 +26,22 @@
 #include <sys/types.h>
 #endif
 
+/* We want to ensure the loops are vectorized (where possible) and
+   also provide a sensible set of target clones (where available).
+   This probably isn't useful other than on x86_64, armv8+, and POWER,
+   though we could do s390x and, presumably, the RISC-V vector
+   extension eventually.  */
+#if __GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 8)
+/* -O3 gets us at least vectorization (though -ftree-loop-vectorize
+    might be good enough).  unsafe-math-optimizations is necessary to
+    vectorize reductions, or to vectorize with Neon at all (due to
+    IEEE-754 conformance according to the GCC doc).  Depending on
+    version, there may also be some unrolling (without -funroll-loops)
+    from O3, even though only unroll-and-jam (loop nests) is
+    advertised.  GCC 6+ could use Ofast.  */
+#  pragma GCC optimize ("O3", "-funsafe-math-optimizations")
+#endif
+
 #include "ompi/mca/op/op.h"
 
 
