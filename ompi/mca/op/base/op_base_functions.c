@@ -62,6 +62,14 @@
 /* thunderx2t99 could be added with GCC 8.  */
 #    endif
 #  endif
+
+#  if __x86_64__
+/* sse4.1 probably isn't worthwhile, although the "avx" code has it.
+   Use haswell because -mavx is orthogonal to -mfma, and the syntax
+   doesn't allow both.  Use skylake-avx512 and knl (if knl is still
+   useful) because optimizing for SKX uses more than avx512f.  */
+#    define TARGETS __attribute__ ((target_clones ("avx,arch=haswell,arch=knl,arch=skylake-avx512,default")))
+#  endif
 #endif
 
 #ifndef TARGETS
