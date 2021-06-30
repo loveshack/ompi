@@ -13,6 +13,7 @@
  * Copyright (c) 2006-2014 Cisco Systems, Inc.  All rights reserved.
  * Copyright (c) 2013      Los Alamos National Security, LLC. All rights
  *                         reserved.
+ * Copyright (c) 2021      University of Manchester.
  * $COPYRIGHT$
  *
  * Additional copyrights may follow
@@ -28,26 +29,37 @@
 
 /* We want to ensure the loops are vectorized (where possible) and
    also provide a sensible set of target clones (where available).
-   This probably isn't useful other than on x86_64, armv8+, and POWER,
-   though we could do s390x and, presumably, the RISC-V vector
-   extension eventually.  */
+   Target clones is probably only relevant on x86_64, armv8+, and
+   POWER, and presumably the RISC-V vector extension eventually.  Note
+   caveats about compilers and libraries below; otherwise, with GCC,
+   we can do everything here without changing autotools files.  */
+
 #if __GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 8)
 /* -O3 gets us at least vectorization (though -ftree-loop-vectorize
     might be good enough).  unsafe-math-optimizations is necessary to
-    vectorize reductions, or to vectorize with Neon at all (due to
-    IEEE-754 conformance according to the GCC doc).  Depending on
-    version, there may also be some unrolling (without -funroll-loops)
-    from O3, even though only unroll-and-jam (loop nests) is
-    advertised.  GCC 6+ could use Ofast.  */
+    vectorize floating point reductions, or to vectorize with Neon at
+    all (due to IEEE-754 conformance according to the GCC doc).
+    Depending on version, there may also be some unrolling (without
+    -funroll-loops) from O3, even though only unroll-and-jam (loop
+    nests) is advertised.  GCC 6+ could just use Ofast.  Earlier GCC
+    may not vectorize as well anyway.
+
+    With other compilers you could compile just this file with
+    appropriate options if the default isn't to vectorize.  */
 #  pragma GCC optimize ("O3", "-funsafe-math-optimizations")
 #endif
 
-/* Unfortunately, target clones only works with post-EL7 (v2.23+) libc.  */
+/* Unfortunately, target clones only works with post-EL7 (v2.23+)
+   glibc, i.e. only GNU/Linux as far as I know.  clang (as of
+   mid-2021) doesn't have target_clones, only target, but you could
+   have multiple copies, with TARGETS defined appropriately for each
+   with a single target.  If you're of the Intel faith, there's an
+   option to multi-version the whole compilation unit.  */
 #if __GNUC__ >= 6 && (__GLIBC__ > 2 || (__GLIBC__ == 2 && __GLIBC_MINOR__ >= 23))
 #  if __powerpc64__
 /* The base is power8 and there's no power10 as of GCC 11.  I don't
    know if anything extra in the POWER9 ISA actually helps.  We could
-   get this on EL7 with the IBM "Advance Toolkit" libc, which gets
+   use this on EL7 with the IBM "Advance Toolkit" libc, which gets
    runtime-linked by the ld-linux its compiler inserts.  */
 #    define TARGETS __attribute__ ((target_clones ("cpu=power9,default")))
 #  endif
@@ -66,8 +78,9 @@
 #  if __x86_64__
 /* sse4.1 probably isn't worthwhile, although the "avx" code has it.
    Use haswell because -mavx is orthogonal to -mfma, and the syntax
-   doesn't allow both.  Use skylake-avx512 and knl (if knl is still
-   useful) because optimizing for SKX uses more than avx512f.  */
+   doesn't allow both; a few FMA instructions are used if they're
+   allowed.  Use skylake-avx512 and knl (if knl is still useful)
+   because optimizing for SKX uses a lot more more than avx512f.  */
 #    define TARGETS __attribute__ ((target_clones ("avx,arch=haswell,arch=knl,arch=skylake-avx512,default")))
 #  endif
 #endif
@@ -463,6 +476,10 @@ OP_FUNC(prod, c_long_double_complex, long double _Complex, *=)
  *************************************************************************/
 
 #undef current_func
+/* Perhaps using a loop with a break is better on average for
+   booleans, but otherwise use bitwise ops for vectorization.  Using
+   && and || fails with "control flow in loop" due to their
+   short-circuiting semantics.  */
 #define current_func(a, b) (((a) != 0) & ((b) != 0))
 /* C integer */
 FUNC_FUNC(land,   int8_t,   int8_t)
@@ -485,6 +502,7 @@ FUNC_FUNC(land, bool, bool)
  *************************************************************************/
 
 #undef current_func
+/* As for AND.  */
 #define current_func(a, b) (((a) != 0) | ((b) != 0))
 /* C integer */
 FUNC_FUNC(lor,   int8_t,   int8_t)
@@ -661,6 +679,8 @@ LOC_STRUCT(long_double_int, long double, int)
  * Max location
  *************************************************************************/
 
+/* These aren't vectorized and I don't know if they can be.  Check the
+   libgfortran implementation. */
 #if OMPI_HAVE_FORTRAN_REAL
 LOC_FUNC(maxloc, 2real, >)
 #endif
